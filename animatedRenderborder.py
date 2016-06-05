@@ -37,6 +37,17 @@ noVertexObjectTypes = ["FONT", "META"]
 #######Update functions########################################################
 
 
+def uiListRefresh(self, context):
+    
+    print(context.scene.border_active_index)
+    
+    bpy.context.scene.render.border_min_x = bpy.context.scene.borders[context.scene.border_active_index].border_min_x
+    bpy.context.scene.render.border_max_x = bpy.context.scene.borders[context.scene.border_active_index].border_max_x
+    bpy.context.scene.render.border_min_y = bpy.context.scene.borders[context.scene.border_active_index].border_min_y
+    bpy.context.scene.render.border_max_y = bpy.context.scene.borders[context.scene.border_active_index].border_max_y     
+
+
+
 def updateFrame(self,context):
     
     bpy.context.scene.frame_set(bpy.context.scene.frame_current)       
@@ -227,7 +238,7 @@ def updateBorderWithMaxY(self,context):
           
 #########Properties###########################################################
 
-
+      
 class animatedRenderBorderProperties(bpy.types.PropertyGroup):
     
     old_trackable_objects = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
@@ -263,11 +274,40 @@ class animatedRenderBorderProperties(bpy.types.PropertyGroup):
 
 
 
+class textblocksPropertiesGroup(bpy.types.PropertyGroup):
+
+    name = bpy.props.StringProperty()
+    
+    border_max_x = bpy.props.FloatProperty()
+    border_min_x = bpy.props.FloatProperty()
+    border_max_y = bpy.props.FloatProperty()
+    border_min_y = bpy.props.FloatProperty()
+    
+    show_render = bpy.props.BoolProperty(default=True)
+    
+    index = bpy.props.IntProperty()
+    
+    colour = bpy.props.FloatVectorProperty(subtype="COLOR", min=0, max=1)
+    
+    type = bpy.props.EnumProperty(description = "The type of bookmark to manage", 
+                                    items = [("Line Number","Line Number","Line Number"),
+                                            ("Detection","Detection","Detection")]       
+                                                       )
+    
+       
+bpy.utils.register_class(textblocksPropertiesGroup)
+
+bpy.types.Scene.borders = bpy.props.CollectionProperty(type=textblocksPropertiesGroup)
+
+bpy.types.Scene.border_active_index = bpy.props.IntProperty(default=0, update=uiListRefresh)
+
+
+
 #########Frame Handler########################################################
 
 #Only needed when manually running from text editor
-#bpy.app.handlers.frame_change_post.clear()
-#bpy.app.handlers.scene_update_post.clear()
+bpy.app.handlers.frame_change_post.clear()
+bpy.app.handlers.scene_update_post.clear()
 
 
 @persistent
@@ -630,6 +670,13 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
         
         error = 0
         
+        row = layout.row()
+        row.template_list("RENDER_UL_borders", "", scene, "borders", scene, "border_active_index", rows=3)
+        column = row.column(align=True)
+        column.operator("render.border_add", text="", icon="ZOOMIN")
+        column.operator("render.border_remove", text="", icon="ZOOMOUT")  
+        
+        
         if not context.scene.render.use_border and border.enable:
             row = layout.row()
             split = row.split(0.7)
@@ -866,6 +913,30 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
         
 
 
+class RENDER_UL_borders(bpy.types.UIList):
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        
+        if item.show_render: 
+        
+            visibilityIcon = "RESTRICT_RENDER_OFF"
+            
+        else:
+            
+            visibilityIcon = "RESTRICT_RENDER_ON"
+            
+        
+        if data:
+            
+            layout.prop(item, "name", text="", emboss=False, icon="BORDER_RECT")
+            layout.prop(item, "show_render", text="", icon=visibilityIcon, emboss=False)
+        
+        else:
+            
+            layout.label(text="", translate=False, icon_value=icon)
+
+
+
 ###########OPERATORS#########################################################
        
 
@@ -991,7 +1062,39 @@ class RENDER_OT_animated_render_border_refresh_values(bpy.types.Operator):
      
         refreshUIValues(context)
             
-        return {'FINISHED'}           
+        return {'FINISHED'}     
+    
+    
+class RENDER_OT_border_add(bpy.types.Operator):
+    """Add a new border"""
+    bl_idname = 'render.border_add'
+    bl_label = "Add border"
+
+    def execute(self, context):
+
+        newBorder = bpy.context.scene.borders.add()
+        newBorder.name = "Border "+str(len(bpy.context.scene.borders))
+        newBorder.index = len(bpy.context.scene.borders)
+        
+        newBorder.border_min_x = bpy.context.scene.render.border_min_x
+        newBorder.border_max_x = bpy.context.scene.render.border_max_x
+        newBorder.border_min_y = bpy.context.scene.render.border_min_y
+        newBorder.border_max_y = bpy.context.scene.render.border_max_y
+        
+        return{'FINISHED'}
+
+
+class RENDER_OT_border_remove(bpy.types.Operator):
+    """Remove the current border"""
+    bl_idname = 'render.border_remove'
+    bl_label = "Remove border"
+
+    def execute(self, context):
+
+        bpy.context.scene.borders.remove(bpy.context.scene.border_active_index)
+
+        return{'FINISHED'}
+          
             
             
 ###########USER PREFERENCES##################################################            
@@ -1016,13 +1119,16 @@ def register():
     
     bpy.app.handlers.frame_change_post.append(animated_render_border)
     bpy.app.handlers.scene_update_post.append(updateObjectList)
-    
+
+    bpy.utils.register_class(RENDER_UL_borders)    
     bpy.utils.register_class(RENDER_PT_animated_render_border)
     bpy.utils.register_class(RENDER_OT_animated_render_border_render)
     bpy.utils.register_class(RENDER_OT_animated_render_border_fix)
     bpy.utils.register_class(RENDER_OT_animated_render_border_insert_keyframe)   
     bpy.utils.register_class(RENDER_OT_animated_render_border_delete_keyframe)  
-    bpy.utils.register_class(RENDER_OT_animated_render_border_refresh_values)  
+    bpy.utils.register_class(RENDER_OT_animated_render_border_refresh_values) 
+    bpy.utils.register_class(RENDER_OT_border_add)
+    bpy.utils.register_class(RENDER_OT_border_remove)           
     bpy.utils.register_class(AnimatedRenderBorderPreferences)        
     
     
@@ -1031,12 +1137,15 @@ def unregister():
     bpy.app.handlers.frame_change_post.remove(animated_render_border)        
     bpy.app.handlers.scene_update_post.remove(updateObjectList)
     
+    bpy.utils.unregister_class(RENDER_UL_borders)        
     bpy.utils.unregister_class(RENDER_PT_animated_render_border)
     bpy.utils.unregister_class(RENDER_OT_animated_render_border_render)
     bpy.utils.unregister_class(RENDER_OT_animated_render_border_fix)
     bpy.utils.unregister_class(RENDER_OT_animated_render_border_insert_keyframe)    
     bpy.utils.unregister_class(RENDER_OT_animated_render_border_delete_keyframe)  
-    bpy.utils.unregister_class(RENDER_OT_animated_render_border_refresh_values)        
+    bpy.utils.unregister_class(RENDER_OT_animated_render_border_refresh_values)
+    bpy.utils.unregister_class(RENDER_OT_border_add)
+    bpy.utils.unregister_class(RENDER_OT_border_remove)            
     bpy.utils.unregister_class(animatedRenderBorderProperties)
     bpy.utils.unregister_class(AnimatedRenderBorderPreferences)    
     
