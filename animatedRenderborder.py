@@ -1080,6 +1080,8 @@ class RENDER_OT_border_remove(bpy.types.Operator):
 
         bpy.context.scene.animated_render_border.borders.remove(bpy.context.scene.animated_render_border.active_index)
         
+        bpy.context.scene.animated_render_border.active_index -= 1
+
         return{'FINISHED'}
           
             
