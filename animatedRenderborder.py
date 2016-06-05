@@ -1063,7 +1063,12 @@ class RENDER_OT_border_add(bpy.types.Operator):
     def execute(self, context):
 
         newBorder = bpy.context.scene.animated_render_border.borders.add()
-        newBorder.name = "Border "+str(len(bpy.context.scene.animated_render_border.borders))
+                        
+        i = 1
+        while "Border "+str(i) in bpy.context.scene.animated_render_border.borders:
+            i+=1
+        
+        newBorder.name = "Border "+str(i)
         newBorder.index = len(bpy.context.scene.animated_render_border.borders)
         
         newBorder.border_min_x = bpy.context.scene.render.border_min_x
