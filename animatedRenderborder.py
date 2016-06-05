@@ -647,8 +647,11 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
         row = layout.row()
         row.template_list("RENDER_UL_borders", "", scene.animated_render_border, "borders", scene.animated_render_border, "active_index", rows=3)
         column = row.column(align=True)
-        column.operator("render.border_add", text="", icon="ZOOMIN")
-        column.operator("render.border_remove", text="", icon="ZOOMOUT")  
+        row = column.row(align=True)
+        row.operator("render.border_add", text="", icon="ZOOMIN")
+        row = column.row(align=True)
+        row.enabled = len(context.scene.animated_render_border.borders) > 1
+        row.operator("render.border_remove", text="", icon="ZOOMOUT")  
         
         
         if not context.scene.render.use_border and border.enable:
