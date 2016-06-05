@@ -37,17 +37,6 @@ noVertexObjectTypes = ["FONT", "META"]
 #######Update functions########################################################
 
 
-def uiListRefresh(self, context):
-    
-    print(context.scene.border_active_index)
-    
-    bpy.context.scene.render.border_min_x = bpy.context.scene.borders[context.scene.border_active_index].border_min_x
-    bpy.context.scene.render.border_max_x = bpy.context.scene.borders[context.scene.border_active_index].border_max_x
-    bpy.context.scene.render.border_min_y = bpy.context.scene.borders[context.scene.border_active_index].border_min_y
-    bpy.context.scene.render.border_max_y = bpy.context.scene.borders[context.scene.border_active_index].border_max_y     
-
-
-
 def updateFrame(self,context):
     
     bpy.context.scene.frame_set(bpy.context.scene.frame_current)       
@@ -56,10 +45,10 @@ def updateFrame(self,context):
    
 def refreshTracking(self,context):
        
-    border = context.scene.animated_render_border
+    border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]
     
     #Removes bounding box when object or group is no longer being tracked.       
-    for object in border.old_trackable_objects:
+    for object in bpy.context.scene.animated_render_border.old_trackable_objects:
 
         #If object is renamed or deleted it wont exist in object list
         if object.name in bpy.data.objects:
@@ -84,16 +73,16 @@ def refreshTracking(self,context):
     #when switching to a new object            
     if border.type == "Object" and border.object !="":
         
-        border.old_trackable_objects.clear()
-        objectAdd = border.old_trackable_objects.add()
+        bpy.context.scene.animated_render_border.old_trackable_objects.clear()
+        objectAdd = bpy.context.scene.animated_render_border.old_trackable_objects.add()
         objectAdd.name = border.object
         
     elif border.type == "Group" and border.group !="":
         
-        border.old_trackable_objects.clear()
+        bpy.context.scene.animated_render_border.old_trackable_objects.clear()
         for object in bpy.data.groups[border.group].objects:
             if object.type in trackableObjectTypes:
-                objectAdd = border.old_trackable_objects.add()
+                objectAdd = bpy.context.scene.animated_render_border.old_trackable_objects.add()
                 objectAdd.name = object.name
     
     bpy.context.scene.frame_set(bpy.context.scene.frame_current)    
@@ -104,7 +93,7 @@ def refreshTracking(self,context):
     
 def updateBoundingBox(self,context):
         
-    border = context.scene.animated_render_border
+    border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]
                             
     if border.type == "Object":  
         
@@ -125,10 +114,10 @@ def updateBoundingBox(self,context):
   
 def toggleObjectBoundingBox(toggle):
     
-    border = bpy.context.scene.animated_render_border
+    border = bpy.context.scene.animated_render_border.borders[bpy.context.scene.animated_render_border.active_index]
     
     #If addon is disabled
-    if not border.enable:
+    if not bpy.context.scene.animated_render_border.enable:
         
         toggle = False
         
@@ -144,9 +133,9 @@ def toggleObjectBoundingBox(toggle):
     
 def toggleGroupBoundingBox(toggle):
     
-    border = bpy.context.scene.animated_render_border
+    border = bpy.context.scene.animated_render_border.borders[bpy.context.scene.animated_render_border.active_index]
     
-    if not border.enable:
+    if not bpy.context.scene.animated_render_border.enable:
         
         toggle = False
         
@@ -195,7 +184,7 @@ def toggleTracking(self,context):
 
 def updateBorderWithMinX(self,context):
 
-    border = bpy.context.scene.animated_render_border     
+    border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]     
     context.scene.render.border_min_x = border.border_min_x
     
     if round(border.border_min_x,2) >= round(border.border_max_x,2):
@@ -206,7 +195,7 @@ def updateBorderWithMinX(self,context):
      
 def updateBorderWithMaxX(self,context):
 
-    border = bpy.context.scene.animated_render_border     
+    border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]         
     context.scene.render.border_max_x = border.border_max_x
     
     if round(border.border_min_x,2) >= round(border.border_max_x,2):
@@ -217,7 +206,7 @@ def updateBorderWithMaxX(self,context):
     
 def updateBorderWithMinY(self,context):
 
-    border = bpy.context.scene.animated_render_border     
+    border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]         
     context.scene.render.border_min_y = border.border_min_y
     
     if round(border.border_min_y,2) >= round(border.border_max_y,2):
@@ -228,7 +217,7 @@ def updateBorderWithMinY(self,context):
     
 def updateBorderWithMaxY(self,context):
 
-    border = bpy.context.scene.animated_render_border     
+    border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]         
     context.scene.render.border_max_y = border.border_max_y  
     
     if round(border.border_min_y,2) >= round(border.border_max_y,2):
@@ -238,12 +227,22 @@ def updateBorderWithMaxY(self,context):
           
 #########Properties###########################################################
 
-      
-class animatedRenderBorderProperties(bpy.types.PropertyGroup):
+
+class bordersPropertiesGroup(bpy.types.PropertyGroup):
+
+    name = bpy.props.StringProperty()
     
-    old_trackable_objects = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
+    border_min_x = bpy.props.FloatProperty(description="Minimum X value for the render border", default=0, min=0, max=0.99, update=updateBorderWithMinX)
     
-    trackable_objects = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
+    border_max_x = bpy.props.FloatProperty(description="Maximum X value for the render border", default=1, min=0.01, max=1, update=updateBorderWithMaxX)
+
+    border_min_y = bpy.props.FloatProperty(description="Minimum Y value for the render border", default=0, min=0, max=0.99, update=updateBorderWithMinY)
+
+    border_max_y = bpy.props.FloatProperty(description="Maximum Y value for the render border", default=1, min=0.01, max=1, update=updateBorderWithMaxY)  
+    
+    margin = bpy.props.IntProperty(default=3, description="Add a margin around the object's bounds", update=updateFrame)
+
+    draw_bounding_box = bpy.props.BoolProperty(default=False, description="Draw the bounding boxes of the objects being tracked", update=updateBoundingBox) 
     
     object = bpy.props.StringProperty(description = "The object to track", update=refreshTracking)
     
@@ -257,52 +256,27 @@ class animatedRenderBorderProperties(bpy.types.PropertyGroup):
                                                                                                         ("Keyframe","Keyframe","Keyframe")], update=refreshTracking)
 
     use_bounding_box = bpy.props.BoolProperty(default=True, description="Use object's bounding box (less reliable, quicker) or object's 'inner points' for boundary checks", update=updateFrame)
-
-    margin = bpy.props.IntProperty(default=3, description="Add a margin around the object's bounds", update=updateFrame)
-
-    draw_bounding_box = bpy.props.BoolProperty(default=False, description="Draw the bounding boxes of the objects being tracked", update=updateBoundingBox)
-
-    enable = bpy.props.BoolProperty(default=False, description="Enable Animated Render Border", update=toggleTracking)
-    
-    border_min_x = bpy.props.FloatProperty(description="Minimum X value for the render border", default=0, min=0, max=0.99, update=updateBorderWithMinX)
-    
-    border_max_x = bpy.props.FloatProperty(description="Maximum X value for the render border", default=1, min=0.01, max=1, update=updateBorderWithMaxX)
-
-    border_min_y = bpy.props.FloatProperty(description="Minimum Y value for the render border", default=0, min=0, max=0.99, update=updateBorderWithMinY)
-
-    border_max_y = bpy.props.FloatProperty(description="Maximum Y value for the render border", default=1, min=0.01, max=1, update=updateBorderWithMaxY)    
-
-
-
-class textblocksPropertiesGroup(bpy.types.PropertyGroup):
-
-    name = bpy.props.StringProperty()
-    
-    border_max_x = bpy.props.FloatProperty()
-    border_min_x = bpy.props.FloatProperty()
-    border_max_y = bpy.props.FloatProperty()
-    border_min_y = bpy.props.FloatProperty()
     
     show_render = bpy.props.BoolProperty(default=True)
     
     index = bpy.props.IntProperty()
+
+
+      
+class animatedRenderBorderProperties(bpy.types.PropertyGroup):
     
-    colour = bpy.props.FloatVectorProperty(subtype="COLOR", min=0, max=1)
+    old_trackable_objects = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
     
-    type = bpy.props.EnumProperty(description = "The type of bookmark to manage", 
-                                    items = [("Line Number","Line Number","Line Number"),
-                                            ("Detection","Detection","Detection")]       
-                                                       )
+    trackable_objects = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
     
-       
-bpy.utils.register_class(textblocksPropertiesGroup)
+    active_index = bpy.props.IntProperty(default=0, update=refreshTracking)
 
-bpy.types.Scene.borders = bpy.props.CollectionProperty(type=textblocksPropertiesGroup)
-
-bpy.types.Scene.border_active_index = bpy.props.IntProperty(default=0, update=uiListRefresh)
-
-
-
+    enable = bpy.props.BoolProperty(default=False, description="Enable Animated Render Border", update=toggleTracking)
+    
+    borders = bpy.props.CollectionProperty(type=bordersPropertiesGroup)
+ 
+    
+   
 #########Frame Handler########################################################
 
 #Only needed when manually running from text editor
@@ -315,7 +289,7 @@ def animated_render_border(scene):
         
     scene = bpy.context.scene
     camera = scene.camera
-    border = scene.animated_render_border
+    border = scene.animated_render_border.borders[scene.animated_render_border.active_index]
     
     cameraExists = False
     
@@ -323,7 +297,7 @@ def animated_render_border(scene):
         if camera.type == "CAMERA":
             cameraExists = True
     
-    if border.enable and cameraExists:
+    if scene.animated_render_border.enable and cameraExists:
         #If object is chosen but consequently renamed, it can't be tracked.
         if validObject() or validGroup(): 
         
@@ -563,7 +537,7 @@ def deleteKeyframe(context):
 
 def validObject():
     
-    border = bpy.context.scene.animated_render_border
+    border = bpy.context.scene.animated_render_border.borders[bpy.context.scene.animated_render_border.active_index]
     
     if border.type == "Object" and border.object != "" and border.object in bpy.data.objects: #If object is chosen as object but renamed, it can't be tracked.
         
@@ -572,7 +546,7 @@ def validObject():
     
 def validGroup():
     
-    border = bpy.context.scene.animated_render_border
+    border = bpy.context.scene.animated_render_border.borders[bpy.context.scene.animated_render_border.active_index]
     
     if border.type == "Group" and border.group != "" and border.group in bpy.data.groups:
         
@@ -664,14 +638,14 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                         
         layout = self.layout
         scene = context.scene
-        border = context.scene.animated_render_border
+        border = context.scene.animated_render_border.borders[context.scene.animated_render_border.active_index]
         
         layout.active = scene.animated_render_border.enable
         
         error = 0
         
         row = layout.row()
-        row.template_list("RENDER_UL_borders", "", scene, "borders", scene, "border_active_index", rows=3)
+        row.template_list("RENDER_UL_borders", "", scene.animated_render_border, "borders", scene.animated_render_border, "active_index", rows=3)
         column = row.column(align=True)
         column.operator("render.border_add", text="", icon="ZOOMIN")
         column.operator("render.border_remove", text="", icon="ZOOMOUT")  
@@ -743,13 +717,13 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
         column = layout.column()
          
         row = column.row()
-        row.prop(scene.animated_render_border, "type",expand=True)
+        row.prop(border, "type",expand=True)
         row = column.row()
         
         if border.type == "Keyframe":
         
             column = layout.column()
-            column.active = context.scene.render.use_border and border.enable
+            column.active = context.scene.render.use_border and context.scene.animated_render_border.enable
             
             col = column.column(align=True)
             col.operator("render.animated_render_border_insert_keyframe", text="Insert Keyframe", icon="KEY_HLT")
@@ -765,15 +739,15 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                       
             row = column.row()
             row.label(text="")
-            row.prop(scene.animated_render_border, "border_max_y", text="Max Y")  
+            row.prop(border, "border_max_y", text="Max Y")  
             row.label(text="")
             row = column.row(align=True)
-            row.prop(scene.animated_render_border, "border_min_x", text="Min X")  
+            row.prop(border, "border_min_x", text="Min X")  
             row.label(text="")
-            row.prop(scene.animated_render_border, "border_max_x", text="Max X")  
+            row.prop(border, "border_max_x", text="Max X")  
             row = column.row()
             row.label(text="")
-            row.prop(scene.animated_render_border, "border_min_y", text="Min Y")        
+            row.prop(border, "border_min_y", text="Min Y")        
             row.label(text="")
             
             row = column.row()
@@ -804,7 +778,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                     #if bpy.data.objects[border.object].type == "SPEAKER":   
                     #    objectIcon = "SPEAKER" #Speaker doesn't have it's own icon like other objects
                      
-                row.prop_search(scene.animated_render_border, "object", scene.animated_render_border, "trackable_objects", text="", icon=objectIcon) #Where my property is, name of property, where list I want is, name of list                    
+                row.prop_search(border, "object", scene.animated_render_border, "trackable_objects", text="", icon=objectIcon) #Where my property is, name of property, where list I want is, name of list                    
                 
             else:
                 row.label(text="Group to track:")
@@ -832,7 +806,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                     row = column.row()  
                 
                 row = column.row()
-                row.prop_search(scene.animated_render_border, "group", bpy.data, "groups", text="")
+                row.prop_search(border, "group", bpy.data, "groups", text="")
             
             
             if border.type == "Object" and border.object == "" or \
@@ -845,7 +819,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
             #New column is to separate it from previous row, it needs to be able to be disabled.
             columnMargin = row.column()
             columnMargin.enabled = enabled    
-            columnMargin.prop(scene.animated_render_border, "margin", text="Margin")    
+            columnMargin.prop(border, "margin", text="Margin")    
             
             if validObject():
                 if bpy.data.objects[border.object].type == "ARMATURE":
@@ -853,7 +827,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                    row = column.row()
                    row.label(text="Bone to track (optional):")
                    row = column.row()
-                   row.prop_search(scene.animated_render_border, "bone", bpy.data.objects[border.object].data, "bones", text="", icon="BONE_DATA") #Where my property is, name of property, where list I want is, name of list
+                   row.prop_search(border, "bone", bpy.data.objects[border.object].data, "bones", text="", icon="BONE_DATA") #Where my property is, name of property, where list I want is, name of list
                    row.label(text="")    
                 
             row = column.row()
@@ -884,11 +858,11 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                 row.enabled = False
             else:
                 row.enabled = True   
-            row.prop(scene.animated_render_border, "use_bounding_box", text="Use Bounding Box")
+            row.prop(border, "use_bounding_box", text="Use Bounding Box")
             
             row = column.row()
             row.enabled = enabled                 
-            row.prop(scene.animated_render_border, "draw_bounding_box", text="Draw Bounding Box")                
+            row.prop(border, "draw_bounding_box", text="Draw Bounding Box")                
   
             row = column.row()     
             row.enabled = enabled and error == 0
@@ -1072,9 +1046,9 @@ class RENDER_OT_border_add(bpy.types.Operator):
 
     def execute(self, context):
 
-        newBorder = bpy.context.scene.borders.add()
-        newBorder.name = "Border "+str(len(bpy.context.scene.borders))
-        newBorder.index = len(bpy.context.scene.borders)
+        newBorder = bpy.context.scene.animated_render_border.borders.add()
+        newBorder.name = "Border "+str(len(bpy.context.scene.animated_render_border.borders))
+        newBorder.index = len(bpy.context.scene.animated_render_border.borders)
         
         newBorder.border_min_x = bpy.context.scene.render.border_min_x
         newBorder.border_max_x = bpy.context.scene.render.border_max_x
@@ -1091,7 +1065,7 @@ class RENDER_OT_border_remove(bpy.types.Operator):
 
     def execute(self, context):
 
-        bpy.context.scene.borders.remove(bpy.context.scene.border_active_index)
+        bpy.context.scene.animated_render_border.borders.remove(bpy.context.scene.animated_render_border.active_index)
 
         return{'FINISHED'}
           
@@ -1113,6 +1087,7 @@ class AnimatedRenderBorderPreferences(bpy.types.AddonPreferences):
 
 def register():
     
+    bpy.utils.register_class(bordersPropertiesGroup)
     bpy.utils.register_class(animatedRenderBorderProperties)
     
     bpy.types.Scene.animated_render_border = bpy.props.PointerProperty(type=animatedRenderBorderProperties)
@@ -1147,6 +1122,7 @@ def unregister():
     bpy.utils.unregister_class(RENDER_OT_border_add)
     bpy.utils.unregister_class(RENDER_OT_border_remove)            
     bpy.utils.unregister_class(animatedRenderBorderProperties)
+    bpy.utils.unregister_class(bordersPropertiesGroup)
     bpy.utils.unregister_class(AnimatedRenderBorderPreferences)    
     
     del bpy.types.Scene.animated_render_border
