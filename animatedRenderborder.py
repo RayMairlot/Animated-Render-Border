@@ -714,7 +714,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                scene.render.border_min_y != border.border_min_y or \
                scene.render.border_min_y != border.border_min_y:
                 row = column.row()
-                row.operator("render.animated_render_border_refresh_values", text="Refresh to synchonise border values", icon="FILE_REFRESH")  
+                row.operator("render.animated_render_border_refresh_values", icon="FILE_REFRESH")  
                       
             row = column.row()
             row.label(text="")
@@ -985,7 +985,7 @@ class RENDER_OT_animated_render_border_delete_keyframe(bpy.types.Operator):
 class RENDER_OT_animated_render_border_refresh_values(bpy.types.Operator):
     """Refresh the UI values in case the border was manually redrawn in the viewport"""
     bl_idname = "render.animated_render_border_refresh_values"
-    bl_label = "Delete Animated Render Border Keyframe"
+    bl_label = "Refresh to synchonise border values"
 
     def execute(self, context):
      
