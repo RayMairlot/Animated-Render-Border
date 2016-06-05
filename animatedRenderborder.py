@@ -541,7 +541,7 @@ def validObject():
     
     if border.type == "Object" and border.object != "" and border.object in bpy.data.objects: #If object is chosen as object but renamed, it can't be tracked.
         
-        return True    
+        return True   
   
     
 def validGroup():
@@ -643,7 +643,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
         layout.active = scene.animated_render_border.enable
         
         error = 0
-        
+                
         row = layout.row()
         row.template_list("RENDER_UL_borders", "", scene.animated_render_border, "borders", scene.animated_render_border, "active_index", rows=3)
         column = row.column(align=True)
@@ -917,9 +917,14 @@ class RENDER_UL_borders(bpy.types.UIList):
             
         
         if data:
+            row = layout.row()
             
-            layout.prop(item, "name", text="", emboss=False, icon=icon)
-            layout.prop(item, "show_render", text="", icon=visibilityIcon, emboss=False)
+            row.enabled = item.type == "Object" and item.object != "" and item.object in bpy.data.objects or \
+                          item.type == "Group" and item.group != "" and item.group in bpy.data.groups or \
+                          item.type == "Keyframe"
+           
+            row.prop(item, "name", text="", emboss=False, icon=icon)
+            row.prop(item, "show_render", text="", icon=visibilityIcon, emboss=False)
         
         else:
             
