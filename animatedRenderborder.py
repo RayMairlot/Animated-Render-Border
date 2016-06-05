@@ -898,11 +898,24 @@ class RENDER_UL_borders(bpy.types.UIList):
         else:
             
             visibilityIcon = "RESTRICT_RENDER_ON"
+        
+        
+        if item.type == "Object":
+            
+            icon = "OBJECT_DATA"
+            
+        elif item.type == "Group":
+            
+            icon = "GROUP"
+            
+        elif item.type == "Keyframe":
+            
+            icon = "SPACE2"
             
         
         if data:
             
-            layout.prop(item, "name", text="", emboss=False, icon="BORDER_RECT")
+            layout.prop(item, "name", text="", emboss=False, icon=icon)
             layout.prop(item, "show_render", text="", icon=visibilityIcon, emboss=False)
         
         else:
@@ -1066,7 +1079,7 @@ class RENDER_OT_border_remove(bpy.types.Operator):
     def execute(self, context):
 
         bpy.context.scene.animated_render_border.borders.remove(bpy.context.scene.animated_render_border.active_index)
-
+        
         return{'FINISHED'}
           
             
