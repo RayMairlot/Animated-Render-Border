@@ -20,7 +20,7 @@ bl_info = {
     "name": "Animated Render Border",
     "description": "Track objects or groups with the border render",
     "author": "Ray Mairlot",
-    "version": (2, 1, 7),
+    "version": (2, 1, 8),
     "blender": (2, 79, 0),
     "location": "Properties> Render> Animated Render Border",
     "category": "Render"}
@@ -441,7 +441,7 @@ def render(self, context):
         oldEnd = context.scene.frame_end
         oldCurrent = context.scene.frame_current
                 
-        for i in range(oldStart, oldEnd+1):
+        for i in range(oldStart, oldEnd+1, context.scene.frame_step):
                             
             context.scene.frame_set(i)
             animated_render_border(context.scene)
