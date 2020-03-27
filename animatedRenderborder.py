@@ -20,7 +20,7 @@ bl_info = {
     "name": "Animated Render Border",
     "description": "Track objects or collections with the border render",
     "author": "Ray Mairlot",
-    "version": (3, 0, 3),
+    "version": (3, 0, 4),
     "blender": (2, 80, 0),
     "location": "Properties> Render> Animated Render Border",
     "category": "Render"}
@@ -869,7 +869,7 @@ class RENDER_PT_animated_render_border(bpy.types.Panel):
                      
             row.operator("render.animated_render_border_render", text=renderLabel, icon="RENDER_ANIMATION")
             
-        if bpy.context.preferences.addons['animatedRenderborder'].preferences.display_border_dimensions:
+        if bpy.context.preferences.addons[__name__].preferences.display_border_dimensions:
             
             resolutionX = (scene.render.resolution_x/100)*scene.render.resolution_percentage
             resolutionY = (scene.render.resolution_y/100)*scene.render.resolution_percentage
